@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Mini Ecommerce</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script defer src="https://use.fontawesome.com/releases/v5.8.1/js/all.js"></script>
+    <style>
+        body {
+            background-color: #fdfdfd;
+        }
+        .navbar {
+            background-color: #ffc107;
+            border-radius: 10px;
+        }
+        .navbar-brand {
+            color: #fff !important;
+            font-weight: bold;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .card-img-top {
+            object-fit: cover;
+            border-radius: 15px 15px 0 0;
+        }
+        .card-body {
+            background-color: #f8f9fa;
+            border-radius: 0 0 15px 15px;
+        }
+        .card-title {
+            color: #007bff;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            border-radius: 50px;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-outline-light {
+            border-radius: 50px;
+        }
+        .modal-content {
+            border-radius: 20px;
+        }
+        #cart {
+            font-size: 18px;
+            background-color: #ff5722;
+            color: #fff;
+            border-radius: 50px;
+        }
+        #cart:hover {
+            background-color: #e64a19;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-light my-3">
+            <a class="navbar-brand" href="#">Mini Ecommerce</a>
+            <div class="ml-auto d-flex">
+                <form class="form-inline" id="formItem">
+                    <input class="form-control mr-sm-2" style="border-radius: 50px;" type="search" placeholder="Search for products..." id="keyword" aria-label="Search">
+                    <button class="btn btn-outline-light my-2 my-sm-0" type="submit">Search</button>
+                </form>
+                <button class="btn ml-3" id="cart">
+                    <i class="fas fa-shopping-cart"></i> (0)
+                </button>
+            </div>
+        </nav>
+
+        <div class="row mt-4" id="listBarang">
+            <!-- Produk akan dimuat di sini -->
+        </div>
+
+        <!-- Modal Keranjang -->
+        <div class="modal fade" id="cartModal" tabindex="-1" role="dialog" aria-labelledby="cartModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="cartModalLabel">Keranjang Belanja</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <ul id="cartList" class="list-group">
+                            <!-- Isi keranjang akan dimuat di sini -->
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                        <button type="button" class="btn btn-danger" id="clearCart">Kosongkan Keranjang</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Data produk
+        const items = [
+            ['001', 'Keyboard Logitech', 60000, 'Keyboard Logitech keren berwarna', 'https://images.idgesg.net/images/article/2019/12/logitech_g_pro_x_keyboard_8-100819883-orig.jpg'],
+            ['002', 'Keyboard MOFII', 300000, 'Keyboard MOFII Aeshtetic', 'https://i5.walmartimages.com/asr/a83ae44b-a56d-41a1-b472-1043ca45babf.d1718925b1a904267e16b0cd34ecb09e.jpeg'],
+            ['003', 'Mouse Logitech', 50000, 'Mouse Logitech SoftPink Pastel', 'https://www.bhphotovideo.com/images/images2500x2500/logitech_910_007117_m240_silent_wireless_mouse_1760692.jpg'],
+            ['004', 'Mouse Robot', 30000, 'Mouse Robot Imut colorfull', 'https://images.tokopedia.net/img/cache/500-square/VqbcmM/2024/7/22/421c34e0-d805-4149-b263-764fe87f5193.jpg']
+        ];
+
+        // Inisialisasi DOM
+        const listBarang = document.getElementById("listBarang");
+        const keyword = document.getElementById("keyword");
+        const cartButton = document.getElementById("cart");
+        const cartList = document.getElementById("cartList");
+        let cart = [];
+
+        // Fungsi untuk merender produk
+        const renderItems = (filteredItems = items) => {
+            listBarang.innerHTML = '';
+            filteredItems.forEach(([id, name, price, desc, img]) => {
+                const col = document.createElement('div');
+                col.className = 'col-4 mt-2';
+                col.innerHTML = `
+                    <div class="card">
+                        <img src="${img}" class="card-img-top" height="200px" alt="${name}">
+                        <div class="card-body">
+                            <h5 class="card-title">${name}</h5>
+                            <p class="card-text">${desc}</p>
+                            <p class="card-text">Rp ${price.toLocaleString()}</p>
+                            <button class="btn btn-primary add-to-cart" data-id="${id}">Tambahkan ke Keranjang</button>
+                        </div>
+                    </div>
+                `;
+                listBarang.appendChild(col);
+            });
+
+            // Tambahkan event listener ke tombol "Add to Cart"
+            document.querySelectorAll(".add-to-cart").forEach(button => {
+                button.addEventListener("click", (e) => {
+                    const itemId = e.target.dataset.id;
+                    addToCart(itemId);
+                });
+            });
+        };
+
+        // Fungsi untuk mencari produk
+        const searchItems = (keyword) => {
+            const filteredItems = items.filter(([_, name]) =>
+                name.toLowerCase().includes(keyword.toLowerCase())
+            );
+            renderItems(filteredItems);
+        };
+
+        // Fungsi untuk menambahkan item ke keranjang
+        const addToCart = (id) => {
+            const item = items.find(item => item[0] === id);
+            if (item) {
+                cart.push(item);
+                updateCartCount();
+                renderCartList();
+            }
+        };
+
+        // Fungsi untuk mengupdate jumlah keranjang
+        const updateCartCount = () => {
+            cartButton.innerHTML = `<i class="fas fa-shopping-cart"></i> (${cart.length})`;
+        };
+
+        // Fungsi untuk merender daftar keranjang
+        const renderCartList = () => {
+            cartList.innerHTML = '';
+            cart.forEach(([id, name, price, , ]) => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `${name} - Rp ${price.toLocaleString()} 
+                    <button class="btn btn-sm btn-danger remove-item" data-id="${id}">Hapus</button>`;
+                cartList.appendChild(li);
+            });
+
+            // Tambahkan event listener untuk menghapus item dari keranjang
+            document.querySelectorAll(".remove-item").forEach(button => {
+                button.addEventListener("click", (e) => {
+                    const itemId = e.target.dataset.id;
+                    removeFromCart(itemId);
+                });
+            });
+        };
+
+        // Fungsi untuk menghapus item dari keranjang
+        const removeFromCart = (id) => {
+            cart = cart.filter(item => item[0] !== id);
+            updateCartCount();
+            renderCartList();
+        };
+
+        // Fungsi untuk mengosongkan keranjang
+        document.getElementById("clearCart").addEventListener("click", () => {
+            cart = [];
+            updateCartCount();
+            renderCartList();
+        });
+
+        // Event listener untuk pencarian
+        document.getElementById("formItem").addEventListener("submit", (e) => {
+            e.preventDefault();
+            searchItems(keyword.value);
+        });
+
+        // Event listener untuk menampilkan keranjang
+        cartButton.addEventListener("click", () => {
+            $('#cartModal').modal('show');
+        });
+
+        // Render produk pada awal load
+        renderItems();
+    </script>
+</body>
+</html>
+
